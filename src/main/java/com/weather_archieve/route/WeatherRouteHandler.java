@@ -4,9 +4,11 @@ import com.weather_archieve.model.DailyTemperature;
 import com.weather_archieve.repository.DailyTemperatureRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.time.LocalDate;
@@ -36,5 +38,17 @@ public class WeatherRouteHandler {
                 .body(temperature, DailyTemperature.class);
     }
 
-    record Temp(LocalDate date, Double temperature) {}
+    public Mono<ServerResponse> getTemperatureForDateInRange(ServerRequest request) {
+        LocalDate date = LocalDate.parse(request.pathVariable("date"), DateTimeFormatter.ISO_LOCAL_DATE);
+        String monthDay = date.format(DateTimeFormatter.ofPattern("MM-dd"));
+        int years = request.queryParam("years").map(Integer::parseInt).orElse(Integer.MAX_VALUE);
+        Flux<DailyTemperature> temperatureInRange = temperatureRepository.findByDateInRange(monthDay, PageRequest.ofSize(years));
+        return ok()
+                .contentType(APPLICATION_JSON)
+                .body(temperatureInRange, DailyTemperature.class);
+
+    }
+
+    record Temp(LocalDate date, Double temperature) {
+    }
 }
