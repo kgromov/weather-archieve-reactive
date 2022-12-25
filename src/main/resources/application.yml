@@ -1,0 +1,19 @@
+spring:
+  data:
+    mongodb:
+      database: test
+      uri: mongodb://localhost:27017/${spring.data.mongodb.database}
+
+frontend:
+  client:
+    host: localhost
+    port: 4200
+    uri: http://${frontend.client.host}:${frontend.client.port}
+    allowed-methods:
+      - '*'
+logging:
+  level:
+    org:
+      springframework:
+        data:
+          mongodb: debug

@@ -1,5 +1,6 @@
 package com.weather_archieve.config;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.cors.CorsConfiguration;
@@ -13,13 +14,15 @@ import java.util.List;
 
 @Configuration
 @EnableWebFlux
+@RequiredArgsConstructor
 public class WebFluxConfig implements WebFluxConfigurer {
+    private final FrontendClientProperties frontendClientProperties;
 
     @Override
     public void addCorsMappings(CorsRegistry corsRegistry) {
         corsRegistry.addMapping("/**")
                 .allowedOrigins("*")
-                .allowedOrigins("http://localhost:4200");
+                .allowedOrigins(frontendClientProperties.getUri());
 //                .allowedMethods("*")
 //                .maxAge(3600);
     }
@@ -28,9 +31,8 @@ public class WebFluxConfig implements WebFluxConfigurer {
 //    @Bean
     CorsWebFilter corsWebFilter() {
         CorsConfiguration corsConfig = new CorsConfiguration();
-        corsConfig.setAllowedOrigins(List.of("http://localhost:4200"));
-        corsConfig.setMaxAge(8000L);
-        corsConfig.addAllowedMethod("GET");
+        corsConfig.setAllowedOrigins(List.of(frontendClientProperties.getUri()));
+        corsConfig.setAllowedMethods(List.of(frontendClientProperties.getAllowedMethods()));
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", corsConfig);

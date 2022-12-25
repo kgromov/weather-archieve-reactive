@@ -1,0 +1,13 @@
+spring:
+  data:
+    mongodb:
+      database: test
+      uri:
+
+frontend:
+  client:
+    host: localhost
+    port: 4200
+    uri: http://${frontend.client.host}:${frontend.client.port}
+    allowed-methods:
+      - '*'
