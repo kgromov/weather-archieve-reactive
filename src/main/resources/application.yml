@@ -17,3 +17,6 @@ logging:
       springframework:
         data:
           mongodb: debug
+
+server:
+  port: 8090

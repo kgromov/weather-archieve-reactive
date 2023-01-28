@@ -5,6 +5,7 @@ import com.weather_archieve.repository.DailyTemperatureRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
@@ -40,9 +41,12 @@ public class WeatherRouteHandler {
 
     public Mono<ServerResponse> getTemperatureForDateInRange(ServerRequest request) {
         LocalDate date = LocalDate.parse(request.pathVariable("date"), DateTimeFormatter.ISO_LOCAL_DATE);
-        String monthDay = date.format(DateTimeFormatter.ofPattern("MM-dd"));
+        String monthDay = date.format(DateTimeFormatter.ofPattern("-MM-dd"));
         int years = request.queryParam("years").map(Integer::parseInt).orElse(Integer.MAX_VALUE);
-        Flux<DailyTemperature> temperatureInRange = temperatureRepository.findByDateInRange(monthDay, PageRequest.ofSize(years));
+//        Flux<DailyTemperature> temperatureInRange = temperatureRepository.findByDateInRange(monthDay, PageRequest.ofSize(years));
+        log.info("date = {}, monthDay = {}, years = {}", date, monthDay, years);
+        PageRequest pageable = PageRequest.ofSize(years).withSort(Sort.by("date").ascending());
+        Flux<DailyTemperature> temperatureInRange = temperatureRepository.findByDateInRangeAggregation(monthDay, pageable);
         return ok()
                 .contentType(APPLICATION_JSON)
                 .body(temperatureInRange, DailyTemperature.class);
