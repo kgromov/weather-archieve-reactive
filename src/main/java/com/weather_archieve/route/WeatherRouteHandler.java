@@ -1,6 +1,8 @@
 package com.weather_archieve.route;
 
 import com.weather_archieve.model.DailyTemperature;
+import com.weather_archieve.model.DayTemperature;
+import com.weather_archieve.model.YearAverageTemperature;
 import com.weather_archieve.repository.DailyTemperatureRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -50,7 +52,27 @@ public class WeatherRouteHandler {
         return ok()
                 .contentType(APPLICATION_JSON)
                 .body(temperatureInRange, DailyTemperature.class);
+    }
 
+    public Mono<ServerResponse> getYearAverageTemperature(ServerRequest request) {
+        Flux<YearAverageTemperature> temperature = temperatureRepository.getYearAverageTemperature(Sort.by("year").ascending());
+        return ok()
+                .contentType(APPLICATION_JSON)
+                .body(temperature, YearAverageTemperature.class);
+    }
+
+    public Mono<ServerResponse> getMinTemperature(ServerRequest request) {
+        Mono<DayTemperature> temperature = temperatureRepository.getMinTemperature();
+        return ok()
+                .contentType(APPLICATION_JSON)
+                .body(temperature, DayTemperature.class);
+    }
+
+    public Mono<ServerResponse> getMaxTemperature(ServerRequest request) {
+        Mono<DayTemperature> temperature = temperatureRepository.getMaxTemperature();
+        return ok()
+                .contentType(APPLICATION_JSON)
+                .body(temperature, DayTemperature.class);
     }
 
     record Temp(LocalDate date, Double temperature) {
