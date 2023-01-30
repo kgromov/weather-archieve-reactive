@@ -1,8 +1,6 @@
 package com.weather_archieve.route;
 
-import com.weather_archieve.model.DailyTemperature;
-import com.weather_archieve.model.DayTemperature;
-import com.weather_archieve.model.YearAverageTemperature;
+import com.weather_archieve.model.*;
 import com.weather_archieve.repository.DailyTemperatureRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -73,6 +71,29 @@ public class WeatherRouteHandler {
         return ok()
                 .contentType(APPLICATION_JSON)
                 .body(temperature, DayTemperature.class);
+    }
+
+    public Mono<ServerResponse> getYearsRange(ServerRequest request) {
+        Mono<YearsRange> temperature = temperatureRepository.getYearsRange();
+        return ok()
+                .contentType(APPLICATION_JSON)
+                .body(temperature, YearsRange.class);
+    }
+
+    public Mono<ServerResponse> getYearsBySeasonsTemperature(ServerRequest request) {
+        PageRequest pageable = PageRequest.ofSize(100).withSort(Sort.by("year").ascending());
+        Flux<YearBySeasonTemperature> seasonsTemperature = temperatureRepository.getYearsBySeasonsTemperature(pageable);
+        return ok()
+                .contentType(APPLICATION_JSON)
+                .body(seasonsTemperature, YearBySeasonTemperature.class);
+    }
+
+    public Mono<ServerResponse> getSeasonsTemperature(ServerRequest request) {
+        PageRequest pageable = PageRequest.ofSize(100).withSort(Sort.by("year").ascending());
+        Flux<SeasonTemperature> seasonsTemperature = temperatureRepository.getSeasonsTemperature(pageable);
+        return ok()
+                .contentType(APPLICATION_JSON)
+                .body(seasonsTemperature, SeasonTemperature.class);
     }
 
     record Temp(LocalDate date, Double temperature) {

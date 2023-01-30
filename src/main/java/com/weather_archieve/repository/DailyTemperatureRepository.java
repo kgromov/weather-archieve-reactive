@@ -1,9 +1,6 @@
 package com.weather_archieve.repository;
 
-import com.weather_archieve.model.DailyTemperature;
-import com.weather_archieve.model.DayTemperature;
-import com.weather_archieve.model.YearAverageTemperature;
-import com.weather_archieve.model.YearsRange;
+import com.weather_archieve.model.*;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.repository.Aggregation;
@@ -13,6 +10,8 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.time.LocalDate;
+import java.util.Comparator;
+import java.util.List;
 
 public interface DailyTemperatureRepository extends ReactiveMongoRepository<DailyTemperature, String> {
     Mono<DailyTemperature> findByDate(LocalDate date);
@@ -88,7 +87,7 @@ public interface DailyTemperatureRepository extends ReactiveMongoRepository<Dail
                 }
             """
     })
-    Flux<YearsRange> getYearsRange();
+    Mono<YearsRange> getYearsRange();
 
     @Aggregation(pipeline = {
             """
@@ -222,5 +221,159 @@ public interface DailyTemperatureRepository extends ReactiveMongoRepository<Dail
     })
     Mono<DayTemperature> getMaxTemperature();
 
-    // TODO: avf season per year
+   @Aggregation(pipeline = {
+           """
+             {
+                $project: {
+                  _id: null,
+                  month:  {
+                    $month: "$date",
+                  },
+                  year: {
+                    $year: "$date",
+                  },
+                  minTemp: {
+                    $min: [
+                      "$morningTemperature",
+                      "$afternoonTemperature",
+                      "$nightTemperature",
+                    ]
+                  },
+                  maxTemp: {
+                    $max: [
+                      "$morningTemperature",
+                      "$afternoonTemperature",
+                      "$nightTemperature",
+                    ]
+                  },
+                  avgTemp: {
+                    $avg: [
+                      "$morningTemperature",
+                      "$afternoonTemperature",
+                      "$nightTemperature",
+                    ]
+                  }
+                }
+              }          
+           """,
+           """
+           {
+               $project: {
+                 year: 1,
+                 minTemp: 1,
+                 maxTemp: 1,
+                 avgTemp: 1,
+                 season: {
+                   $switch: {
+                     branches: [
+                       {
+                         case: {
+                           $or: [
+                             {
+                               $eq: ["$month", 1],
+                             },
+                             {
+                               $eq: ["$month", 2],
+                             },
+                             {
+                               $eq: ["$month", 12],
+                             }
+                           ]
+                         },
+                         then: "WINTER",
+                       },
+                       {
+                         case: {
+                           $and: [
+                             {
+                               $gt: ["$month", 2],
+                             },
+                             {
+                               $lt: ["$month", 6],
+                             }
+                           ]
+                         },
+                         then: "SPRING",
+                       },
+                       {
+                         case: {
+                           $and: [
+                             {
+                               $gt: ["$month", 5],
+                             },
+                             {
+                               $lt: ["$month", 9],
+                             }
+                           ]
+                         },
+                         then: "SUMMER",
+                       },
+                       {
+                         case: {
+                           $and: [
+                             {
+                               $gt: ["$month", 8],
+                             },
+                             {
+                               $lt: ["$month", 12],
+                             }
+                           ]
+                         },
+                         then: "AUTUMN",
+                       },
+                     ],
+                     default: "Not found",
+                   },
+                 },
+               },
+             }
+           """,
+           """
+            {
+                $group: {
+                  _id: {
+                    year: "$year",
+                    season: "$season",
+                  },
+                  minTemp: {
+                    $min: "$minTemp",
+                  },
+                  maxTemp: {
+                    $max: "$maxTemp",
+                  },
+                  avgTemp: {
+                    $avg: "$avgTemp",
+                  }
+                }
+              }
+           """,
+           """
+            {
+               $project: {
+                 _id: 0,
+                 year: "$_id.year",
+                 season: "$_id.season",
+                 minTemp: "$minTemp",
+                 maxTemp: "$maxTemp",
+                 avgTemp: "$avgTemp",
+               },
+             }
+           """
+   })
+    Flux<SeasonTemperature> getSeasonsTemperature(Pageable pageable);
+
+    default Flux<YearBySeasonTemperature> getYearsBySeasonsTemperature(Pageable pageable) {
+        return getSeasonsTemperature(pageable)
+                .groupBy(SeasonTemperature::getYear)
+                .flatMap(groupByYear -> {
+                 /*   Integer year = groupByYear.key();
+                    Mono<List<SeasonTemperature>> seasons = groupByYear.collectSortedList(Comparator.comparing(s -> s.getSeason().ordinal()));
+                    return Mono.from(seasons).map(s -> new YearBySeasonTemperature(year, s));*/
+                    return groupByYear.collectSortedList(Comparator.comparing(s -> s.getSeason().ordinal()))
+                            .map(seasons -> new YearBySeasonTemperature(groupByYear.key(), seasons));
+                })
+                .sort(Comparator.comparing(YearBySeasonTemperature::getYear));
+    }
+
+
 }

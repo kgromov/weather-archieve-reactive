@@ -20,9 +20,13 @@ public class WeatherRouting {
     @Bean
     public RouterFunction<ServerResponse> weatherRoutes() {
         return route()
+                .GET("/weather/range", accept(APPLICATION_JSON), weatherRouteHandler::getYearsRange)
                 .GET("/weather/average", accept(APPLICATION_JSON), weatherRouteHandler::getYearAverageTemperature)
                 .GET("/weather/min", accept(APPLICATION_JSON), weatherRouteHandler::getMinTemperature)
                 .GET("/weather/max", accept(APPLICATION_JSON), weatherRouteHandler::getMaxTemperature)
+                .GET("/weather/seasonsInYear", accept(APPLICATION_JSON), weatherRouteHandler::getYearsBySeasonsTemperature)
+                .GET("/weather/seasons", accept(APPLICATION_JSON), weatherRouteHandler::getSeasonsTemperature)
+
                 .GET("/weather/current", accept(APPLICATION_JSON), weatherRouteHandler::getCurrentTemperature)
                 .GET("/weather/single/{date}", accept(APPLICATION_JSON), weatherRouteHandler::getTemperatureForDate)
                 .GET("/weather/{date}", accept(APPLICATION_JSON), weatherRouteHandler::getTemperatureForDateInRange)
